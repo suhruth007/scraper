@@ -1,7 +1,11 @@
 
+
 # AI Job Scraper
 
 A Flask-based web application that scrapes job postings and matches them against resumes using AI.
+## ⚠️ Important Notice
+
+**This project is in active development and contains known bugs and issues. Do not use without thorough testing and review.**
 
 ## Features
 
