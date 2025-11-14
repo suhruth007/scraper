@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="py-12">
+  <div class="mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-4xl font-bold mb-2">Your Job Matches</h1>
+        <p class="text-gray-600">Found <span id="totalJobs" class="font-semibold">0</span> matching opportunities</p>
+      </div>
+      <div class="flex gap-3">
+        <button class="px-4 py-2 border-2 border-indigo-600 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50" id="exportBtn">
+          ⬇ Export CSV
+        </button>
+        <a href="{{ url_for('api.landing') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700">
+          Search Again
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Sorting -->
+  <div class="bg-white rounded-lg shadow p-4 mb-6 flex gap-4 flex-wrap items-center">
+    <div>
+      <label class="text-sm font-semibold text-gray-700 mr-2">Filter by Match Score:</label>
+      <select id="scoreFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <option value="0">All Scores</option>
+        <option value="80">80% and above</option>
+        <option value="70">70% and above</option>
+        <option value="60">60% and above</option>
+      </select>
+    </div>
+    
+    <div>
+      <label class="text-sm font-semibold text-gray-700 mr-2">Sort by:</label>
+      <select id="sortBy" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <option value="score-desc">Highest Match First</option>
+        <option value="score-asc">Lowest Match First</option>
+        <option value="company">Company Name</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Jobs List -->
+  <div id="jobsList" class="space-y-4">
+    <!-- Job cards will be populated here -->
+    <div class="text-center py-12">
+      <div class="inline-block p-3 bg-indigo-100 rounded-full mb-4">
+        <svg class="w-6 h-6 text-indigo-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+      </div>
+      <p class="text-gray-600">Loading results...</p>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" class="hidden text-center py-12 bg-gray-50 rounded-lg">
+    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-700 mb-2">No matches found</h3>
+    <p class="text-gray-600">Try adjusting your search criteria and search again.</p>
+  </div>
+</div>
+
+<!-- Job Card Modal (Detail View) -->
+<div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+    <div class="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+      <h2 id="modalTitle" class="text-2xl font-bold"></h2>
+      <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    </div>
+    
+    <div class="p-6 space-y-6">
+      <div id="modalContent"></div>
+      
+      <div class="border-t pt-4 flex gap-3">
+        <a id="modalJobLink" href="#" target="_blank" class="flex-1 py-2 px-4 bg-indigo-600 text-white text-center rounded-lg font-semibold hover:bg-indigo-700">
+          View Full Job
+        </a>
+        <button onclick="closeModal()" class="flex-1 py-2 px-4 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const taskId = '{{ task_id }}';
+  let allJobs = [];
+
+  async function loadResults() {
+    try {
+      const res = await fetch(`/task/${taskId}/results`);
+      const data = await res.json();
+
+      if (data.error) {
+        document.getElementById('jobsList').innerHTML = `
+          <div class="text-center py-12 bg-red-50 rounded-lg">
+            <h3 class="text-lg font-semibold text-red-700 mb-2">Error Loading Results</h3>
+            <p class="text-red-600">${data.error}</p>
+          </div>
+        `;
+        return;
+      }
+
+      allJobs = data.jobs || [];
+      document.getElementById('totalJobs').textContent = allJobs.length;
+
+      if (allJobs.length === 0) {
+        document.getElementById('jobsList').innerHTML = '';
+        document.getElementById('emptyState').classList.remove('hidden');
+      } else {
+        document.getElementById('emptyState').classList.add('hidden');
+        renderJobs();
+      }
+    } catch (err) {
+      console.error('Failed to load results:', err);
+      document.getElementById('jobsList').innerHTML = `
+        <div class="text-center py-12 bg-red-50 rounded-lg">
+          <h3 class="text-lg font-semibold text-red-700 mb-2">Error</h3>
+          <p class="text-red-600">Failed to load results. Please refresh the page.</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderJobs() {
+    let jobs = [...allJobs];
+
+    // Filter
+    const scoreFilter = parseInt(document.getElementById('scoreFilter').value);
+    if (scoreFilter > 0) {
+      jobs = jobs.filter(j => j.score >= scoreFilter);
+    }
+
+    // Sort
+    const sortBy = document.getElementById('sortBy').value;
+    if (sortBy === 'score-desc') jobs.sort((a, b) => b.score - a.score);
+    else if (sortBy === 'score-asc') jobs.sort((a, b) => a.score - b.score);
+    else if (sortBy === 'company') jobs.sort((a, b) => (a.company || '').localeCompare(b.company || ''));
+
+    // Render
+    const html = jobs.map(job => `
+      <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6 border-l-4 border-indigo-600 cursor-pointer" onclick="openModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">
+        <div class="grid grid-cols-4 gap-4 items-start">
+          <!-- Job Info -->
+          <div class="col-span-2">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">${job.title}</h3>
+            <p class="text-sm text-gray-600 mb-3">${job.company} • ${job.location || 'Location TBD'}</p>
+            
+            <div class="flex flex-wrap gap-2">
+              ${(job.salary ? `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">${job.salary}</span>` : '')}
+              ${(job.job_type ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${job.job_type}</span>` : '')}
+              ${(job.experience_range ? `<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">${job.experience_range}</span>` : '')}
+            </div>
+          </div>
+
+          <!-- Match Score -->
+          <div class="text-center">
+            <div class="text-4xl font-bold ${getScoreColor(job.score)}">
+              ${job.score}%
+            </div>
+            <p class="text-xs text-gray-600 mt-1">Match Score</p>
+          </div>
+
+          <!-- Skills Gap -->
+          <div>
+            <p class="text-xs font-semibold text-gray-700 mb-2">Skill Gaps:</p>
+            <div class="flex flex-wrap gap-1">
+              ${(job.gaps || []).slice(0, 3).map(gap => `
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">${gap}</span>
+              `).join('')}
+              ${(job.gaps && job.gaps.length > 3) ? `<span class="text-xs text-gray-500">+${job.gaps.length - 3} more</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('jobsList').innerHTML = html;
+  }
+
+  function getScoreColor(score) {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
+  function openModal(job) {
+    const modal = document.getElementById('modal');
+    document.getElementById('modalTitle').textContent = job.title;
+    document.getElementById('modalJobLink').href = job.url || '#';
+    
+    const content = `
+      <div class="space-y-4">
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-2">Company</div>
+          <div class="text-lg">${job.company}</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-sm font-semibold text-gray-700 mb-2">Location</div>
+            <div>${job.location || 'TBD'}</div>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-gray-700 mb-2">Experience</div>
+            <div>${job.experience_range || 'TBD'}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-2">Match Score</div>
+          <div class="text-3xl font-bold ${getScoreColor(job.score)}">${job.score}%</div>
+        </div>
+
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-2">Matching Skills</div>
+          <div class="flex flex-wrap gap-2">
+            ${(job.matching_skills || []).map(skill => `
+              <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">${skill}</span>
+            `).join('')}
+          </div>
+        </div>
+
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-2">Skill Gaps</div>
+          <div class="flex flex-wrap gap-2">
+            ${(job.gaps || []).map(gap => `
+              <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">${gap}</span>
+            `).join('')}
+          </div>
+        </div>
+
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-2">Job Description</div>
+          <div class="text-gray-700 max-h-60 overflow-y-auto">${job.description || 'No description available'}</div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('modalContent').innerHTML = content;
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+  }
+
+  // Event listeners for filters and sorting
+  document.getElementById('scoreFilter').addEventListener('change', renderJobs);
+  document.getElementById('sortBy').addEventListener('change', renderJobs);
+
+  // Export CSV
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (allJobs.length === 0) {
+      alert('No jobs to export');
+      return;
+    }
+
+    let csv = 'Job Title,Company,Location,Experience,Match Score,Skill Gaps,Job URL\n';
+    allJobs.forEach(job => {
+      csv += `"${job.title}","${job.company}","${job.location}","${job.experience_range}",${job.score},"${(job.gaps || []).join(', ')}","${job.url}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `job-matches-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  });
+
+  // Load results on page load
+  loadResults();
+</script>
+
+{% endblock %}

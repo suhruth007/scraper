@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white rounded-lg shadow-lg p-8">
+    <h1 class="text-3xl font-bold mb-2 text-center">Welcome Back</h1>
+    <p class="text-center text-gray-600 mb-8">Sign in to continue finding your perfect job match</p>
+
+    <!-- Google OAuth -->
+    <a href="{{ url_for('auth.google_login') }}" class="w-full py-3 px-4 bg-white border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3 mb-6">
+      <svg class="w-5 h-5" viewBox="0 0 24 24">
+        <image href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSI0IiBmaWxsPSIjRjJGMkYyIi8+PHBhdGggZD0iTTEyIDE1QzEzLjY1NyAxNSAxNSAxMy42NTcgMTUgMTJDMTUgMTAuMzQzIDEzLjY1NyA5IDEyIDlDMTAuMzQzIDkgOSAxMC4zNDMgOSAxMkM5IDEzLjY1NyAxMC4zNDMgMTUgMTIgMTVaIiBzdHJva2U9IiMxRjJFMzciIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTEyIDN2MTRNNSR5IDEySDE5IiBzdHJva2U9IiMxRjJFMzciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+" />
+      </svg>
+      Sign in with Google
+    </a>
+
+    <!-- Divider -->
+    <div class="relative mb-6">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-300"></div>
+      </div>
+      <div class="relative flex justify-center text-sm">
+        <span class="px-2 bg-white text-gray-500">or</span>
+      </div>
+    </div>
+
+    <!-- Skip / Continue as Guest -->
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+      <p class="text-sm text-gray-700 mb-3">
+        Want to try without signing up? You'll get a temporary session.
+      </p>
+      <button id="skipLoginBtn" class="w-full py-2 px-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700">
+        Continue as Guest
+      </button>
+    </div>
+
+    <p class="text-xs text-center text-gray-500 mt-8">
+      By signing in, you agree to our 
+      <a href="#" class="text-indigo-600 hover:underline">Terms of Service</a> 
+      and 
+      <a href="#" class="text-indigo-600 hover:underline">Privacy Policy</a>
+    </p>
+  </div>
+
+  <!-- Info Box -->
+  <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+    <h3 class="font-semibold text-blue-900 mb-2">Why sign in?</h3>
+    <ul class="text-sm text-blue-800 space-y-1">
+      <li>✓ Save multiple searches</li>
+      <li>✓ Get email alerts on new matches</li>
+      <li>✓ Access Pro features</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  document.getElementById('skipLoginBtn').addEventListener('click', () => {
+    // Create guest session
+    const guestId = 'guest_' + Date.now();
+    sessionStorage.setItem('guest_session', guestId);
+    window.location.href = "{{ url_for('api.details') }}";
+  });
+</script>
+
+{% endblock %}

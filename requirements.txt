@@ -1,0 +1,18 @@
+Flask==2.3.3
+gunicorn==21.2.0
+selenium==4.12.0
+cryptography==41.0.3
+celery[redis]==5.4.0
+redis==4.6.0
+flask-sqlalchemy==3.0.3
+flask-migrate==4.0.4
+flask-mail==0.9.1
+flask-limiter==2.8.1   # <-- FIXED
+flask-login==0.6.3
+google-auth-oauthlib==1.1.0
+openai>=1.0.0
+tenacity==8.2.2
+python-dotenv==1.0.0
+pytest==7.4.0
+stripe==6.0.0
+requests==2.31.0

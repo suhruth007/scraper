@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=sqlite:///ai_job_scraper.db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - RATELIMIT_STORAGE_URI=redis://redis:6379/2
+      - FERNET_KEY=${FERNET_KEY}
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: celery -A src.app.tasks.celery worker --loglevel=info -Q default
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - FERNET_KEY=${FERNET_KEY}
+    depends_on:
+      - redis
+      - web

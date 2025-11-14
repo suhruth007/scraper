@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto py-12">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold mb-2">Tell Us About Your Dream Job</h1>
+    <p class="text-gray-600">Fill in your details so we can find the perfect matches for you</p>
+  </div>
+
+  <form id="detailsForm" class="bg-white rounded-lg shadow-lg p-8 space-y-6">
+    <!-- Job Titles -->
+    <div>
+      <label for="job_titles" class="block text-sm font-semibold mb-2">
+        Desired Job Titles <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="job_titles" 
+        name="job_titles" 
+        placeholder="e.g. Backend Engineer, Full Stack Developer, DevOps Engineer"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+        required
+      />
+      <p class="text-xs text-gray-500 mt-1">Separate multiple titles with commas</p>
+    </div>
+
+    <!-- Location -->
+    <div>
+      <label for="location" class="block text-sm font-semibold mb-2">
+        Preferred Location <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="text" 
+        id="location" 
+        name="location" 
+        placeholder="e.g. Bengaluru, Hyderabad, Remote"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+        required
+      />
+      <p class="text-xs text-gray-500 mt-1">City or "Remote" for remote opportunities</p>
+    </div>
+
+    <!-- Years of Experience -->
+    <div>
+      <label for="years_of_experience" class="block text-sm font-semibold mb-2">
+        Years of Experience <span class="text-red-500">*</span>
+      </label>
+      <select 
+        id="years_of_experience" 
+        name="years_of_experience"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+        required
+      >
+        <option value="">Select experience level</option>
+        <option value="0">Fresher (0 years)</option>
+        <option value="1">1-2 years</option>
+        <option value="3">3-5 years</option>
+        <option value="6">6-10 years</option>
+        <option value="11">10+ years</option>
+      </select>
+    </div>
+
+    <!-- Skills (Optional) -->
+    <div>
+      <label for="skills" class="block text-sm font-semibold mb-2">
+        Key Skills <span class="text-gray-500 text-xs">(Optional)</span>
+      </label>
+      <input 
+        type="text" 
+        id="skills" 
+        name="skills" 
+        placeholder="e.g. Python, Docker, React, AWS, PostgreSQL"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
+      />
+      <p class="text-xs text-gray-500 mt-1">We'll use these to find better matches. Separate with commas.</p>
+    </div>
+
+    <!-- Resume Upload -->
+    <div>
+      <label for="resume" class="block text-sm font-semibold mb-2">
+        Upload Your Resume <span class="text-red-500">*</span>
+      </label>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-600 transition" id="resumeDropZone">
+        <input 
+          type="file" 
+          id="resume" 
+          name="resume" 
+          accept=".pdf,.doc,.docx,.txt" 
+          class="hidden"
+          required
+        />
+        <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        <p class="text-gray-600 font-semibold">Click to upload or drag and drop</p>
+        <p class="text-xs text-gray-500 mt-1">PDF, DOC, DOCX, TXT • Max 5MB</p>
+        <p id="resumeFileName" class="text-sm text-indigo-600 font-semibold mt-3"></p>
+      </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+      <strong>🔒 Your Privacy Matters:</strong> Your resume is encrypted, stored temporarily, and auto-deleted after 7 days. We comply with GDPR.
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex gap-4">
+      <button 
+        type="submit" 
+        class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        id="submitBtn"
+      >
+        Find My Perfect Job
+      </button>
+      <button 
+        type="button" 
+        class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50"
+        onclick="window.history.back()"
+      >
+        Back
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById('detailsForm');
+  const resumeDropZone = document.getElementById('resumeDropZone');
+  const resumeInput = document.getElementById('resume');
+  const resumeFileName = document.getElementById('resumeFileName');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Resume file drop
+  resumeDropZone.addEventListener('click', () => resumeInput.click());
+  resumeDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    resumeDropZone.classList.add('border-indigo-600', 'bg-indigo-50');
+  });
+  resumeDropZone.addEventListener('dragleave', () => {
+    resumeDropZone.classList.remove('border-indigo-600', 'bg-indigo-50');
+  });
+  resumeDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    resumeDropZone.classList.remove('border-indigo-600', 'bg-indigo-50');
+    if (e.dataTransfer.files.length > 0) {
+      resumeInput.files = e.dataTransfer.files;
+      updateResumeFileName();
+    }
+  });
+
+  resumeInput.addEventListener('change', updateResumeFileName);
+
+  function updateResumeFileName() {
+    if (resumeInput.files.length > 0) {
+      const file = resumeInput.files[0];
+      resumeFileName.textContent = '✓ ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
+    }
+  }
+
+  // Form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
+
+    const formData = new FormData(form);
+    
+    try {
+      const res = await fetch('{{ url_for("api.upload_and_queue") }}', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.status === 202) {
+        const json = await res.json();
+        const taskId = json.task_id;
+        // Redirect to analyzing page
+        window.location.href = '/analyzing/' + taskId;
+      } else {
+        const json = await res.json();
+        alert('Error: ' + (json.error || 'Failed to upload'));
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Find My Perfect Job';
+      }
+    } catch (err) {
+      alert('Network error: ' + err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Find My Perfect Job';
+    }
+  });
+</script>
+
+{% endblock %}

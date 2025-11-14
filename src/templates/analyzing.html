@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12">
+  <div class="max-w-md w-full">
+    <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+      <div class="mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 relative">
+          <div class="absolute inset-0 border-4 border-indigo-200 rounded-full"></div>
+          <div class="absolute inset-0 border-4 border-transparent border-t-indigo-600 rounded-full animate-spin"></div>
+        </div>
+        <h1 class="text-2xl font-bold">Analyzing Your Resume</h1>
+        <p class="text-gray-600 mt-2">Finding perfect job matches...</p>
+      </div>
+
+      <!-- Progress indicator -->
+      <div class="space-y-3 mb-8">
+        <div class="text-left">
+          <div class="flex items-center gap-2 text-sm mb-1">
+            <span id="step1" class="w-5 h-5 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">✓</span>
+            <span>Uploading resume</span>
+          </div>
+          <div class="h-2 bg-indigo-600 rounded-full" id="progress1"></div>
+        </div>
+
+        <div class="text-left">
+          <div class="flex items-center gap-2 text-sm mb-1">
+            <span id="step2" class="w-5 h-5 rounded-full bg-gray-300 text-white text-xs flex items-center justify-center">2</span>
+            <span class="text-gray-600">Scraping job boards</span>
+          </div>
+          <div class="h-2 bg-gray-200 rounded-full" id="progress2"></div>
+        </div>
+
+        <div class="text-left">
+          <div class="flex items-center gap-2 text-sm mb-1">
+            <span id="step3" class="w-5 h-5 rounded-full bg-gray-300 text-white text-xs flex items-center justify-center">3</span>
+            <span class="text-gray-600">Running LLM analysis</span>
+          </div>
+          <div class="h-2 bg-gray-200 rounded-full" id="progress3"></div>
+        </div>
+      </div>
+
+      <div id="progressText" class="text-sm text-gray-600 mb-4">
+        Starting analysis... <span id="progressPercent">0</span>%
+      </div>
+
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
+        <p class="font-semibold mb-1">💡 Tip:</p>
+        <p>This typically takes 30-120 seconds. Feel free to leave this page and come back later.</p>
+      </div>
+
+      <!-- Estimated Time -->
+      <p class="text-xs text-gray-500 mt-6">
+        Task ID: <code class="text-gray-700">{{ task_id }}</code>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const taskId = '{{ task_id }}';
+  let currentStep = 1;
+  let lastProgress = 0;
+
+  async function checkStatus() {
+    try {
+      const res = await fetch(`/task/${taskId}/status`);
+      const data = await res.json();
+
+      if (data.error) {
+        // Redirect to error page or show error
+        document.body.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center">
+            <div class="max-w-md text-center">
+              <h1 class="text-2xl font-bold text-red-600 mb-4">Analysis Failed</h1>
+              <p class="text-gray-600 mb-6">${data.error}</p>
+              <a href="{{ url_for('api.landing') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Start Over</a>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const status = data.status;
+      const progress = data.progress || lastProgress;
+      lastProgress = progress;
+
+      // Update progress bar
+      document.getElementById('progressPercent').textContent = progress;
+      
+      // Update steps based on progress
+      if (progress >= 0) updateStep(1, true);
+      if (progress >= 33) updateStep(2, true);
+      if (progress >= 66) updateStep(3, true);
+
+      // Update progress bars
+      document.getElementById('progress1').style.width = Math.min(progress, 33) + '%';
+      document.getElementById('progress2').style.width = Math.min(Math.max(progress - 33, 0), 33) + '%';
+      document.getElementById('progress3').style.width = Math.min(Math.max(progress - 66, 0), 34) + '%';
+
+      if (status === 'completed') {
+        // Redirect to results
+        window.location.href = `/results/${taskId}`;
+      } else if (status === 'failed') {
+        document.body.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center">
+            <div class="max-w-md text-center">
+              <h1 class="text-2xl font-bold text-red-600 mb-4">Analysis Failed</h1>
+              <p class="text-gray-600 mb-6">Something went wrong. Please try again.</p>
+              <a href="{{ url_for('api.landing') }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Start Over</a>
+            </div>
+          </div>
+        `;
+        return;
+      } else {
+        // Continue polling
+        setTimeout(checkStatus, 1500);
+      }
+    } catch (err) {
+      console.error('Status check failed:', err);
+      setTimeout(checkStatus, 2000);
+    }
+  }
+
+  function updateStep(step, complete) {
+    const elem = document.getElementById(`step${step}`);
+    if (complete) {
+      elem.classList.add('bg-indigo-600');
+      elem.classList.remove('bg-gray-300');
+      elem.textContent = '✓';
+    }
+  }
+
+  // Start polling
+  checkStatus();
+</script>
+
+{% endblock %}
